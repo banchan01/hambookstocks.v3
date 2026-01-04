@@ -1,186 +1,137 @@
-# 🚀 HAMBOOK STOCKS 📈
+# HAMBOOK STOCKS
 
-> **PNU SW학습공동체 프로젝트** - 모의 주식 투자 플랫폼
+**HAMBOOK STOCKS**는 실시간 모의 주식 투자 웹 서비스입니다.  
+사용자는 가상의 자산으로 주식을 매매하고, 자신만의 주식을 상장하며, 다른 사용자들과 소통할 수 있습니다.
 
-[![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://python.org)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.115.8-green.svg)](https://fastapi.tiangolo.com/)
-[![React](https://img.shields.io/badge/React-18.2.0-blue.svg)](https://reactjs.org/)
-[![MySQL](https://img.shields.io/badge/MySQL-8.0+-orange.svg)](https://mysql.com/)
-[![Redis](https://img.shields.io/badge/Redis-5.2.1-red.svg)](https://redis.io/)
+👉 **서비스 바로가기**: [https://hambook-stocks.me/](https://hambook-stocks.me/)
 
-## 📖 프로젝트 소개
-
-**HAMBOOK STOCKS**는 실제 주식 투자의 진입 장벽이 높아 실제 돈으로 선뜻 발을 딛기 어려운 사람들을 위해 개발된 모의 주식 투자 플랫폼입니다.
-
-### 🎯 주요 특징
-- 💰 **안전한 모의 투자**: 가상 머니로 위험 없이 주식 투자 체험
-- 📊 **실시간 거래**: 실시간 매수/매도 및 가격 변동 시스템
-- 📰 **뉴스 피드**: 매일경제 기사 크롤링 및 AI 요약
-- 💬 **실시간 채팅**: 웹소켓 기반 익명 채팅방
-- 🏆 **랭킹 시스템**: 수익률 기반 유저 랭킹 (명예의 전당)
-- 🎨 **개인화**: 나만의 주식 상장 시스템
+<img width="1906" height="904" alt="Hambook Stocks Screenshot" src="https://github.com/user-attachments/assets/5f5ae143-b4b1-4957-a490-ac47a919ad26" />
 
 ---
 
-## 🛠 기술 스택
+## 🎯 주요 기능
 
-### Frontend
-- **React 18.2.0** - 사용자 인터페이스
-- **Axios** - HTTP 클라이언트
-- **React Router DOM** - 라우팅
-- **Recharts** - 차트 시각화
-- **Swiper** - 슬라이더 컴포넌트
-
-### Backend
-- **FastAPI** - 고성능 웹 프레임워크
-- **SQLAlchemy** - ORM
-- **PyJWT** - JWT 인증
-- **Redis** - 캐싱 및 세션 관리
-- **OpenAI API** - 뉴스 요약
-- **WebSocket** - 실시간 통신
-
-### Database
-- **MySQL** - 메인 데이터베이스
-- **Redis** - 캐싱 및 세션 저장소
+*   **📈 실시간 거래**: 실시간 가격 변동 로직을 기반으로 매수 및 매도 주문을 체결할 수 있습니다.
+*   **🏢 나만의 주식 상장**: 사용자가 직접 자신의 주식을 상장하고 거래할 수 있는 기능을 제공합니다.
+*   **📰 최신 뉴스 요약**: 매일경제 최신뉴스를 크롤링하고 AI가 요약하여 제공합니다.
+*   **💬 실시간 채팅**: 웹소켓을 이용한 채팅 기능을 통해 다른 투자자들과 정보를 교환할 수 있습니다.
+*   **🔐 사용자 관리**: 회원가입, 로그인 및 자산 관리 기능을 제공합니다.
 
 ---
 
-## 🚀 빠른 시작
+## 🛠 아키텍처
 
-### 1. 저장소 클론
+<img width="2726" height="1316" alt="아키텍쳐" src="https://github.com/user-attachments/assets/6a33d512-3083-4e17-a675-32d598f28f24" />
+HambookStocks는 안정적인 서비스 운영을 위해 Docker 컨테이너 기반으로 설계되었으며, 각 컴포넌트는 아래와 같은 역할을 담당합니다.
+
+<br/>
+
+*   **Nginx**
+    *   외부 요청을 받아 내부 서비스로 라우팅하는 Reverse Proxy 역할을 수행합니다.
+    *   `/api` 경로는 **FastAPI** 백엔드로, 그 외 요청은 **React** 프론트엔드로 전달합니다.
+*   **Docker**
+    *   MySQL, Redis, Backend, Frontend 등 서비스 구동에 필요한 컴포넌트를 컨테이너로 정의하여 관리합니다.
+    *   복잡한 설정 없이 `docker compose up` 로 전체 서비스 환경을 구축하고 실행할 수 있도록 합니다.
+*   **FastAPI**
+    *   사용자 로그인/회원가입, 주식 매수/매도 주문 체결, 실시간 데이터 처리 등 서비스의 핵심 로직을 수행합니다.
+*   **React**
+    *   사용자가 시세 확인, 주문, 채팅 등 서비스를 이용하는 웹 인터페이스를 제공합니다.
+*   **MySQL**
+    *   회원 정보, 사용자의 자산 및 보유 주식 현황, 거래 내역 등 데이터를 저장하고 관리합니다.
+*   **Redis**
+    *   실시간으로 변동하는 주식 시세와 뉴스 데이터를 캐싱하여 빠르게 제공하고, 로그인 세션 정보를 관리합니다.
+
+---
+
+## 📚 기술 스택
+
+
+| 분류 | 기술 |
+| :--- | :--- |
+| **Frontend** | ![React](https://img.shields.io/badge/React-61DAFB?style=flat-square&logo=react&logoColor=black) ![Recharts](https://img.shields.io/badge/Recharts-22b5bf?style=flat-square) 
+| **Backend** | ![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat-square&logo=fastapi&logoColor=white) ![WebSocket](https://img.shields.io/badge/WebSocket-1E1F1C?style=flat-square) |
+| **Database** | ![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=flat-square&logo=mysql&logoColor=white) ![Redis](https://img.shields.io/badge/Redis-DC382D?style=flat-square&logo=redis&logoColor=white) |
+| **Infra** | ![AWS EC2](https://img.shields.io/badge/AWS%20EC2-FF9900?style=flat-square&logo=amazon-aws&logoColor=white) ![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=docker&logoColor=white) ![Nginx](https://img.shields.io/badge/Nginx-009639?style=flat-square&logo=nginx&logoColor=white) | ![Certbot](https://img.shields.io/badge/Certbot-003BEE?style=flat-square&logo=eff&logoColor=white) ![Let's Encrypt](https://img.shields.io/badge/Let's%20Encrypt-003A70?style=flat-square&logo=letsencrypt&logoColor=white)
+
+---
+
+## 🚀 실행 방법
+
+이 프로젝트는 Docker Compose를 사용하여 간편하게 실행할 수 있습니다.
+
+
+> **💡 로컬 환경 실행 시 주의사항**<br>
+> 본 프로젝트의 기본 설정에는 Certbot(SSL) 설정이 포함되어 있습니다.<br>
+> **로컬 환경** 에서 테스트할 경우, `docker-compose.yml`에서 Certbot 관련 설정을 주석 처리하거나 Nginx 설정을 로컬에 맞춰 수정해야 정상적으로 실행됩니다.
+
+### 1. 사전 요구사항
+
+프로젝트 실행을 위해서는 **Docker**와 **Docker Compose**가 시스템에 설치되어 있어야 합니다. 
+
+### 2. 프로젝트 Clone
+
+터미널을 열고 프로젝트 코드를 로컬 컴퓨터로 복사합니다.
+
 ```bash
-git clone https://github.com/your-username/hambook-stocks.git
-cd hambook-stocks
+git clone https://github.com/banchan01/hambookstocks.v3.git
+cd hambookstocks.v3
 ```
 
-### 2. 백엔드 설정
+### 3. 환경 변수 설정
+
+프로젝트 실행에 필요한 비밀번호, API 키 등을 설정하기 위해 `.env` 파일이 필요합니다.  
+프로젝트 루트 디렉토리에 `.env` 파일을 생성하고 아래 내용을 복사하여 환경에 맞게 값을 채워주세요.
+
+> ⚠️ **주의:** `.env` 파일에는 민감한 정보가 포함되므로 외부로 유출되지 않도록 각별히 유의해야 합니다.
+
+```ini
+MYSQL_USERNAME=
+MYSQL_PASSWORD=
+MYSQL_HOST=                 # docker-compose mysql service 이름
+MYSQL_PORT=
+MYSQL_DBNAME=
+REDIS_HOST=                 # docker-compose redis service 이름
+GPT_KEY=                    # OpenAI API Key (뉴스 요약 기능용)
+```
+
+### 4. 도커 이미지 다운로드
+`docker-compose.yml`에 정의된 도커 이미지들을 dockerhub에서 다운로드합니다.
 ```bash
-# 가상환경 생성 및 활성화
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-
-# 의존성 설치
-pip install -r requirements.txt
-
-# 환경 변수 설정
-cp .env.example .env
-# .env 파일에서 데이터베이스 설정 및 API 키 입력
-
-# 서버 실행
-uvicorn main:app --reload
+docker compose pull
 ```
 
-### 3. 프론트엔드 설정
+### 5. 서비스 실행
+이미지 다운로드가 완료되면 서비스를 실행합니다.
 ```bash
-cd front-react
-yarn install
-yarn start
+docker compose up -d
 ```
 
-### 4. 데이터베이스 설정
-```sql
--- MySQL 데이터베이스 생성
-CREATE DATABASE hambook_stocks;
-```
+### 6. 실행 확인
 
----
+실행이 완료되었다면 브라우저를 열고 다음 주소에 접속하여 서비스가 정상적으로 동작하는지 확인합니다.
 
-## 📁 프로젝트 구조
+👉 **접속 주소**: [http://localhost](http://localhost)
 
-```
-hambookstocks.v2/
-├── app/                          # 백엔드 애플리케이션
-│   ├── dependencies/             # 데이터베이스, JWT, Redis 설정
-│   ├── models/                   # 데이터베이스 모델
-│   ├── routers/                  # API 라우터
-│   └── services/                 # 비즈니스 로직
-├── front-react/                  # React 프론트엔드
-│   ├── src/
-│   │   ├── components/           # React 컴포넌트
-│   │   ├── services/             # API 서비스
-│   │   └── styles/               # CSS 스타일
-│   └── public/                   # 정적 파일
-├── front/                        # 기존 HTML/CSS/JS 프론트엔드
-└── front2/                       # 대시보드 스타일 프론트엔드
-```
-
----
-
-## 🔧 주요 기능
-
-### 📈 주식 거래 시스템
-- 실시간 매수/매도 기능
-- 가격 변동 알고리즘 (alpha = 0.1)
-- 거래 내역 추적 및 관리
-
-### 📰 뉴스 시스템
-- 매일경제 기사 자동 크롤링
-- OpenAI GPT를 활용한 기사 요약
-- 실시간 뉴스 피드 제공
-
-### 💬 채팅 시스템
-- WebSocket 기반 실시간 채팅
-- 로그인/비로그인 사용자 모두 참여 가능
-- 익명 채팅 기능
-
-### 👤 사용자 관리
-- JWT 토큰 기반 인증
-- Redis를 활용한 세션 관리
-- 개인 주식 포트폴리오 관리
-
----
 
 ## 👥 팀원
 
 | 이름 | 역할 | 담당 분야 |
-|------|------|-----------|
-| 하승원 | Frontend 개발 | React 기반 사용자 인터페이스 개발 |
-| 김민찬 | Backend 개발 | FastAPI 기반 API 개발, 데이터베이스 설계 |
-| 노현민 | 기획 | 프로젝트 기획 및 요구사항 분석 |
-| 김다영 | 디자인 | UX/UI 디자인 및 사용자 경험 설계 |
-
----
-
-## 📊 개발 진행 상황
-
-### ✅ 완료된 기능
-- [x] React 기반 웹 구조 세팅
-- [x] JWT 토큰 처리 및 Redis 도입
-- [x] MySQL 데이터베이스 전환
-- [x] 회원가입, 로그인, 로그아웃 로직
-- [x] 매일경제 기사 크롤링
-- [x] OpenAI API를 활용한 뉴스 요약
-- [x] 실시간 채팅 기능
-- [x] 매수/매도 가격 변동 기능
-- [x] MyPage 기능 구현
-
-### 🔄 진행 중인 기능
-- [ ] LOGO DESIGN 및 웹 컴포넌트 구조 디자인
-- [ ] 주식 거래 로직 및 게임 기능 설계
-- [ ] 사용자 맞춤형 기능 강화
-
----
-
-## 🤝 기여하기
-
-1. 이 저장소를 Fork 합니다
-2. 새로운 브랜치를 생성합니다 (`git checkout -b feature/amazing-feature`)
-3. 변경사항을 커밋합니다 (`git commit -m 'Add some amazing feature'`)
-4. 브랜치에 Push 합니다 (`git push origin feature/amazing-feature`)
-5. Pull Request를 생성합니다
+| :---: | :---: | :--- |
+| **김민찬** | Backend | FastAPI 기반 API 개발, DB 설계, Docker 인프라 구축, AWS EC2 배포 |
+| **하승원** | Frontend | React 기반 사용자 인터페이스 개발, 컴포넌트 설계 |
+| **김혜빈** | Frontend | React 기반 사용자 인터페이스 개발, 컴포넌트 설계 |
+| **이서진** | Backend | FastAPI 기반 API 개발, DB 설계 |
 
 ---
 
 ## 📄 라이선스
 
-이 프로젝트는 MIT 라이선스 하에 배포됩니다. 자세한 내용은 [LICENSE](LICENSE) 파일을 참조하세요.
+MIT License
 
----
+Copyright (c) 2025 banchan_01
 
-## 📞 문의
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
-프로젝트에 대한 문의사항이 있으시면 이슈를 생성해 주세요.
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
----
-
-**© 2025 HAMBOOK STOCKS Team** | PNU SW학습공동체 프로젝트
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
