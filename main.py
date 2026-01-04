@@ -28,15 +28,16 @@ scheduler = BackgroundScheduler()
 
 app.add_middleware(  # CORS MIDDLE WARE
     CORSMiddleware,
-    allow_origins=["https://www.hambookstocks.store"],
+    allow_origins=[
+        "https://www.hambookstocks.store",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:14364",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-app.mount("/front/assets", StaticFiles(directory="front/assets"), name="assets")
-app.mount("/front/vendor", StaticFiles(directory="front/vendor"), name="vendor")
-app.mount("/front2/assets", StaticFiles(directory="front2/assets"), name="assets")
 
 
 app.include_router(mystocks_routers.router)
