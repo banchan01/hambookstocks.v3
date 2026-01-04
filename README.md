@@ -112,6 +112,7 @@ docker compose up -d
 
 👉 **접속 주소**: [http://localhost](http://localhost)
 
+---
 
 ## 👥 팀원
 
