@@ -2,8 +2,6 @@ services:
   backend:
     image: banchani/hambook.v3-fastapi:3.0
     container_name: hambook.v3-fastapi
-    ports:
-      - "8000:8000"
     restart: always
     env_file:
       - .env
