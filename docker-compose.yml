@@ -1,0 +1,64 @@
+services:
+  backend:
+    image: banchani/hambook.v3-fastapi:3.0
+    container_name: hambook.v3-fastapi
+    ports:
+      - "8000:8000"
+    restart: always
+    env_file:
+      - .env
+    environment:
+      - MYSQL_HOST=hambook-db
+      - REDIS_HOST=hambook-redis
+    depends_on:
+      hambook-db:
+        condition: service_healthy
+      hambook-redis:
+        condition: service_started
+    networks:
+      - app-network
+    volumes:
+      - ./main.py:/app/main.py
+      - ./app/dependencies/redis_db.py:/app/app/dependencies/redis_db.py
+      - ./app/routers/getnews_routers.py:/app/app/routers/getnews_routers.py
+
+  frontend:
+    image: banchani/hambook.v3-react:3.0
+    container_name: hambook.v3-react
+    ports:
+      - "80:80" 
+    restart: always
+    depends_on:
+      - backend
+    networks:
+      - app-network
+
+  hambook-db:
+    image: banchani/hambook.v3-mysql:3.0
+    container_name: hambook-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: 4010gg4010gg
+      MYSQL_DATABASE: hambook
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost", "-u", "root", "-p4010gg4010gg"]
+      timeout: 20s
+      retries: 10
+
+  hambook-redis:
+    image: banchani/hambook.v3-redis:3.0
+    container_name: hambook-redis
+    restart: always
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  db_data:
