@@ -2,8 +2,7 @@ let socket = null;
 
 export const connectStockWebSocket  = (onMessage, onClose) => {
     if (!socket || socket.readyState !== WebSocket.OPEN) {
-        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        socket = new WebSocket(`${wsProtocol}//${window.location.host}/api/get_info/stock_info`);
+        socket = new WebSocket(`wss://hambook-stocks.me/api/get_info/stock_info`);
 
         socket.onopen = () => {
             console.log("WebSocket 연결 성공");
