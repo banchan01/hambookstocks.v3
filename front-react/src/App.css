@@ -1,5 +1,6 @@
 .App {
   text-align: center;
+  padding-top: 80px; /* 헤더 높이만큼 여백 확보 */
 }
 
 .App-logo {

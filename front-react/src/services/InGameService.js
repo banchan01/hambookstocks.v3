@@ -18,7 +18,7 @@ export const sell_request = async (stock_name, quantity, price) => {
         const response = await api.post("/trade/sell_request", {
             stock_name,
             quantity,
-            price,
+            stock_price: price,
         });
         return response.data; // 리턴값 메시지밖에 없음
     } catch (error) {

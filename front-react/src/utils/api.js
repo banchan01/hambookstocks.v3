@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "https://api.hambookstocks.store", // FastAPI 서버 주소
+  baseURL: "http://127.0.0.1:8000", // FastAPI 서버 주소 (로컬)
   headers: {
     "Content-Type": "application/json",
   },

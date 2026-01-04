@@ -61,7 +61,7 @@ const MyPage = () => {
   };
 
   const handleGG = async () => {
-    if (window.confirm('정말로 ㅈㅈ하시겠습니까?')) {
+    if (window.confirm('정말로 gg 하시겠습니까?')) {
       await gg(token);
       alert('GG 완료! 당신의 앞날을 응원합니다.');
       window.location.reload();

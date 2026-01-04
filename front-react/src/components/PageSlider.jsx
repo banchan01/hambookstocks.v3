@@ -7,11 +7,14 @@ import '../styles/PageSlider.css';
 export default function PageSlider() {
   const [index, setIndex] = useState(0);
 
-  const pages = [<GameStart />, <InGame />];
+  // 페이지 개수는 고정 (GameStart, InGame)
+  const PAGE_COUNT = 2;
 
   const nextPage = () => {
-    setIndex((prev) => (prev + 1) % pages.length);
+    setIndex((prev) => (prev + 1) % PAGE_COUNT);
   };
+
+  const pages = [<GameStart onGameStart={nextPage} />, <InGame />];
 
   return (
     <div className="page-slider-container">
@@ -22,11 +25,6 @@ export default function PageSlider() {
           </CSSTransition>
         </SwitchTransition>
       </div>
-
-      {/* 버튼을 아예 별도로 빼서 아래에 위치 */}
-      <button className="next-button" onClick={nextPage}>
-        <img src="/next-button.png" alt="다음 화면" />
-      </button>
     </div>
   );
 }

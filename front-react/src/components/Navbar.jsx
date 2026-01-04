@@ -114,33 +114,20 @@ export default function Navbar() {
         </a>
       </div>
       <div className="menu">
-        {/* <a href="/" className="menu-item">
-          Home
-        </a> */}
-        {/* <a href="#" className="menu-item" onClick={OpenGameExplain}>
-          How To Play
-        </a> */}
-        {/* {isGameExplainOpen && (
-          <div className="game-explain">
-            <p>1. 주식을 사고팝니다.</p>
-            <p>2. 시장 상황을 분석합니다.</p>
-            <p>3. 수익을 극대화하세요!</p>
-            <p>4. 나만의 주식을 상장해보세요!</p>
-          </div>
-        )} */}
-        <Link to="/mypage" className="menu-item">
-          <img src="/MYPAGE.svg" alt="이미지" className="mypage-img"></img>
-        </Link>
-
-        {/* link로 수정 */}
-        <button className="menu-item" onClick={toggleLoginPanel}>
-          {isLoggedIn ? (
-            'My Account'
-          ) : (
-            <img src="/LOGIN.svg" alt="이미지" className="login-img"></img>
-          )}{' '}
-          {/* 로그인 여부에 따라 버튼 이름 변경 */}
-        </button>
+        {isLoggedIn ? (
+          <>
+            <Link to="/mypage" className="menu-item">
+              My Page
+            </Link>
+            <button className="menu-item logout-btn" onClick={handleLogout}>
+              Logout
+            </button>
+          </>
+        ) : (
+          <button className="menu-item login-btn" onClick={toggleLoginPanel}>
+            Login
+          </button>
+        )}
       </div>
 
       {isLoginOpen && (
@@ -148,7 +135,7 @@ export default function Navbar() {
           {!isLoggedIn /* 로그인 여부에 따라 판넬 내용 변경 */ ? (
             !isSignUpMode ? (
               <div className="login-content">
-                <p>Please Login Here</p>
+                <p>Welcome to HambookStocks</p>
                 {error && <p className="error-message">{error}</p>}
                 <input
                   type="text"

@@ -2,7 +2,7 @@ let socket = null;
 
 export const connectStockWebSocket  = (onMessage, onClose) => {
     if (!socket || socket.readyState !== WebSocket.OPEN) {
-        socket = new WebSocket("wss://api.hambookstocks.store/get_info/stock_info");
+        socket = new WebSocket("ws://127.0.0.1:8000/get_info/stock_info");
 
         socket.onopen = () => {
             console.log("WebSocket 연결 성공");
