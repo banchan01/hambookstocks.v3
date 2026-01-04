@@ -6,11 +6,13 @@ from typing import Dict, Any, List
 
 import redis
 import json
+import os
 
 router = APIRouter()
 
-# Redis 연결 설정 (로컬호스트, 기본 포트)
-rd = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
+# Redis 연결 설정 (환경변수 사용)
+REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
+rd = redis.Redis(host=REDIS_HOST, port=6379, db=0, decode_responses=True)
 
 class news_resp(BaseModel):
     message: str
