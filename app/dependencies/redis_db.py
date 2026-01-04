@@ -1,6 +1,8 @@
+import os
 from redis import asyncio as aioredis
 
-REDIS_URL = "redis://localhost"
+REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
+REDIS_URL = f"redis://{REDIS_HOST}"
 
 
 async def get_redis():
