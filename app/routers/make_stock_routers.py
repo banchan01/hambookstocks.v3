@@ -71,15 +71,8 @@ async def make_stock(
         stock_description=req.stock_description,
     )
 
-    update_trade_stock = TradeStocks(
-        login_id=login_id,
-        stock_name=req.stock_name,
-        is_buy=False,  # 만들면 판매로 올려야됨
-        quantity=req.stock_quantity,
-    )
     db.add(my_stock)
     db.add(new_stock)
-    db.add(update_trade_stock)
     db.commit()
     db.refresh(new_stock)
 
