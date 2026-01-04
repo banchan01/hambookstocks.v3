@@ -2,7 +2,8 @@ let socket = null;
 
 export const connectStockWebSocket  = (onMessage, onClose) => {
     if (!socket || socket.readyState !== WebSocket.OPEN) {
-        socket = new WebSocket("ws://127.0.0.1:8000/get_info/stock_info");
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        socket = new WebSocket(`${wsProtocol}//${window.location.host}/api/get_info/stock_info`);
 
         socket.onopen = () => {
             console.log("WebSocket 연결 성공");

@@ -17,7 +17,10 @@ class WebSocketService {
       this.guestId = guestId;
 
       // 기본 연결
-      this.ws = new WebSocket('ws://127.0.0.1:8000/multichat/ws');
+      // Nginx 프록시를 통해 연결 (/api/multichat/ws)
+      const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = `${wsProtocol}//${window.location.host}/api/multichat/ws`;
+      this.ws = new WebSocket(wsUrl);
       // 연결 성공 시 인증 데이터 전송
       console.log(this.ws);
       this.ws.onopen = () => {

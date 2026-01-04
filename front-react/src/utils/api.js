@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "http://127.0.0.1:8000", // FastAPI 서버 주소 (로컬)
+  baseURL: "/api", // Nginx 프록시를 타도록 변경
   headers: {
     "Content-Type": "application/json",
   },
