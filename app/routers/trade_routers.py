@@ -25,6 +25,9 @@ async def buy_stock(
     redis_db=Depends(get_redis),
     redis_service: RedisService = Depends(),
 ):
+    if req.stock_price is None:
+        raise HTTPException(status_code=400, detail="주식 가격이 필요합니다.")
+
     if not authorization:
         raise HTTPException(status_code=401, detail="로그인하셔야 합니다.")
 
@@ -33,6 +36,8 @@ async def buy_stock(
     if not (login_id := await redis_db.get(token)):
         raise HTTPException(status_code=401, detail="유효하지 않은 토큰입니다")
 
+    transaction_occurred = False
+    trade_transactions = []
     """
     돈 있는지 확인 / 돈 없으면 구매 불가능
     """
@@ -44,93 +49,53 @@ async def buy_stock(
         raise HTTPException(status_code=400, detail="잔액이 부족합니다.")
 
     """
-    sell_req 올라온거 trade_stocks에서 찾고, 찾는 수량보다 적게 있으면.. 있는 만큼 구매하고, 없는 만큼 buy_req 를 tradestocks에 올린다
+    판매 중인 주문 찾기
     """
-    trade_info = db.exec(
-        select(TradeStocks).where(TradeStocks.stock_name == req.stock_name)
-    ).first()
     trade_info_list = db.exec(
-        select(TradeStocks).where(TradeStocks.stock_name == req.stock_name)
+        select(TradeStocks)
+        .where(TradeStocks.stock_name == req.stock_name, TradeStocks.is_buy == False)
+        .order_by(TradeStocks.id)
     ).all()
-    transaction_occurred = False
+    
+    trade_info = trade_info_list[0] if trade_info_list else None
+    
     seller = None
 
-    if trade_info:
-        if trade_info.is_buy:
-            if trade_info.login_id == login_id:
-                # 동일한 login_id인 경우 수량만 업데이트
-                trade_info.quantity += req.quantity
-
-                db.commit()
-                return {"msg": "매수 요청 완료"}
+    if trade_info_list:  # 팔려는 사람(매도 주문)이 있다면 거래 시작!
+        remaining_quantity = req.quantity
+        
+        for trade_info in trade_info_list:
+            if remaining_quantity <= 0:
+                break
+                
+            if trade_info.quantity > remaining_quantity:
+                trade_amount = remaining_quantity
+                trade_info.quantity -= remaining_quantity
+                remaining_quantity = 0
             else:
-                # 다른 login_id인 경우 새로운 요청 추가
-                trade_info = TradeStocks(
-                    login_id=login_id,
-                    stock_name=req.stock_name,
-                    is_buy=True,
-                    quantity=req.quantity,
-                )
-                db.add(trade_info)
+                trade_amount = trade_info.quantity
+                remaining_quantity -= trade_info.quantity
+                db.delete(trade_info) # 판매 물량 소진 시 삭제
+
+            transaction_occurred = True
+            trade_transactions.append((trade_info.login_id, trade_amount))
+
+        # 만약 다 못 샀는데 판매 물량이 끝났다면, 남은 만큼 매수 주문 등록
+        if remaining_quantity > 0:
+            db.add(TradeStocks(login_id=login_id, stock_name=req.stock_name, quantity=remaining_quantity, is_buy=True))
+
+    else:  # 팔려는 사람이 아예 없으면 내 주문을 게시판에 올림
+        # 기존에 내가 올린 매수 주문이 있는지 확인
+        my_existing_order = db.exec(select(TradeStocks).where(
+            TradeStocks.login_id == login_id, 
+            TradeStocks.stock_name == req.stock_name, 
+            TradeStocks.is_buy == True
+        )).first()
+        
+        if my_existing_order:
+            my_existing_order.quantity += req.quantity
         else:
-            # 판매 요청이 올라와 있으면
-            remaining_quantity = req.quantity  # 사용자가 구매하고자 하는 남은 수량
-            transaction_occurred = False  # 거래 발생 여부
-            trade_transactions = []  # 거래 내역을 저장할 리스트
-
-            for (
-                trade_info
-            ) in trade_info_list:  # 여러 개의 판매 주문을 처리할 수 있도록 반복문 사용
-                if trade_info.quantity > remaining_quantity:
-                    trade_amount = remaining_quantity  # 요청 수량만큼 거래 가능
-                    trade_info.quantity -= (
-                        remaining_quantity  # 판매 주문에서 해당 수량 차감
-                    )
-                    transaction_occurred = True
-                    trade_transactions.append(
-                        (trade_info.login_id, trade_amount)
-                    )  # 거래 정보 저장
-                    remaining_quantity = 0
-                    break  # 요청한 수량을 전부 처리했으므로 종료
-
-                elif trade_info.quantity == remaining_quantity:
-                    trade_amount = remaining_quantity  # 요청 수량만큼 거래 가능
-                    db.delete(trade_info)  # 판매 주문을 전부 처리했으므로 삭제
-                    transaction_occurred = True
-                    trade_transactions.append(
-                        (trade_info.login_id, trade_amount)
-                    )  # 거래 정보 저장
-                    remaining_quantity = 0
-                    break  # 요청한 수량을 전부 처리했으므로 종료
-
-                else:  # trade_info.quantity < remaining_quantity
-                    trade_amount = trade_info.quantity  # 판매 주문의 모든 수량을 사용
-                    remaining_quantity -= trade_info.quantity  # 남은 요청 수량 업데이트
-                    db.delete(trade_info)  # 판매 주문 소진으로 삭제
-                    transaction_occurred = True
-                    trade_transactions.append(
-                        (trade_info.login_id, trade_amount)
-                    )  # 거래 정보 저장
-
-            # 요청한 수량이 판매 주문을 모두 소진하고도 남아있는 경우
-            if remaining_quantity > 0:
-                new_trade_info = TradeStocks(
-                    quantity=remaining_quantity,
-                    stock_name=req.stock_name,
-                    is_buy=True,
-                    login_id=login_id,
-                )
-                db.add(new_trade_info)  # 새로운 구매 요청 등록
-    else:
-        trade_info = TradeStocks(
-            login_id=login_id,
-            stock_name=req.stock_name,
-            is_buy=True,
-            quantity=req.quantity,
-        )
-        db.add(trade_info)
-
-    db.commit()
+            db.add(TradeStocks(login_id=login_id, stock_name=req.stock_name, quantity=req.quantity, is_buy=True))
 
     """
     구매한 user balance 차감, Mystocks 에 보유주식 추가
@@ -146,16 +111,6 @@ async def buy_stock(
             seller = db.exec(select(User).where(User.login_id == seller_id)).first()
             if seller:
                 seller.balance += trade_amount * req.stock_price  # 판매자 balance 증가
-
-                # 판매자의 주식 수량 감소
-                seller_stock = db.exec(
-                    select(MyStocks).where(
-                        MyStocks.login_id == seller_id,
-                        MyStocks.stock_name == req.stock_name,
-                    )
-                ).first()
-
-                seller_stock.quantity -= trade_amount
 
         # 구매자의 보유 주식 업데이트
         buyer_stock = db.exec(
@@ -174,20 +129,13 @@ async def buy_stock(
             buyer_stock.quantity += sum(
                 trade_amount for _, trade_amount in trade_transactions
             )
-
-        db.commit()
+            db.add(buyer_stock) # 명시적 추가 (Dirty checking 보장)
 
     """
     tradestocks 에 is_buy 인것과 quantity 를 불러온걸 활용해서 가격변동
     """
-    updated_trade_info = db.exec(
-        select(TradeStocks).where(TradeStocks.stock_name == req.stock_name)
-    ).first()
+    new_stock_price = req.stock_price + (req.quantity * alpha)
 
-    if updated_trade_info.is_buy == True:
-        new_stock_price = req.stock_price + updated_trade_info.quantity * alpha
-    else:
-        new_stock_price = req.stock_price - updated_trade_info.quantity * alpha
 
     updated_stock_for_price = db.exec(
         select(UserStocks).where(UserStocks.stock_name == req.stock_name)
@@ -216,6 +164,8 @@ async def sell_order(
     redis_db=Depends(get_redis),
     redis_service: RedisService = Depends(),
 ):
+    if req.stock_price is None:
+        raise HTTPException(status_code=400, detail="주식 가격이 필요합니다.")
     """토큰인증"""
 
     if not authorization:
@@ -224,6 +174,9 @@ async def sell_order(
 
     if not (login_id := await redis_db.get(token)):
         raise HTTPException(status_code=401, detail="유효하지 않은 토큰입니다")
+
+    transaction_occurred = False
+    trade_transactions = []
 
     """
     주식 있는지 확인 / 주식 없으면 매도 불가능
@@ -246,85 +199,55 @@ async def sell_order(
     """
     buy_req 올라온거 trade_stocks에서 찾고, 찾는 수량보다 적게 있으면.. 있는 만큼 판매하고, 없는 만큼 sell_req 를 tradestocks에 올린다
     """
-    trade_info = db.exec(
-        select(TradeStocks).where(TradeStocks.stock_name == req.stock_name)
-    ).first()
+    # 팔러 왔으니 매수 주문만 찾아야 합니다.
     trade_info_list = db.exec(
-        select(TradeStocks).where(TradeStocks.stock_name == req.stock_name)
+        select(TradeStocks)
+        .where(TradeStocks.stock_name == req.stock_name, TradeStocks.is_buy == True)
+        .order_by(TradeStocks.id)
     ).all()
-    transaction_occurred = False
+    
+    # 첫 번째 매수 물량 확인용
+    trade_info = trade_info_list[0] if trade_info_list else None
 
-    if trade_info:
-        # 올라온게 sell 일때
-        if not trade_info.is_buy:  # 동일한 판매자가 존재하는 경우
-            if trade_info.login_id == login_id:
-                # 동일한 login_id인 경우 수량만 업데이트
-                trade_info.quantity += req.quantity
+    if trade_info_list:  # 사겠다는 사람(매수 주문)이 있다면 거래 시작!
+        remaining_quantity = req.quantity
+        
+        for trade_info in trade_info_list:
+            if remaining_quantity <= 0:
+                break
+                
+            if trade_info.quantity > remaining_quantity:
+                trade_amount = remaining_quantity
+                trade_info.quantity -= remaining_quantity
+                remaining_quantity = 0
             else:
-                # 다른 login_id인 경우 새로운 판매 요청 추가
-                trade_info = TradeStocks(
-                    login_id=login_id,
-                    stock_name=req.stock_name,
-                    is_buy=False,
-                    quantity=req.quantity,
-                )
-                db.add(trade_info)
+                trade_amount = trade_info.quantity
+                remaining_quantity -= trade_info.quantity
+                db.delete(trade_info) # 매수 주문 소진 시 삭제
+
+            transaction_occurred = True
+            trade_transactions.append((trade_info.login_id, trade_amount)) # (구매자ID, 거래수량)
+
+        # 시장의 매수 물량을 다 채워줬는데도 내 주식이 남았다면, 남은 만큼 판매 주문 등록
+        if remaining_quantity > 0:
+            db.add(TradeStocks(login_id=login_id, stock_name=req.stock_name, quantity=remaining_quantity, is_buy=False))
+
+    else:  # 사겠다는 사람이 아무도 없으면 내 판매 주문을 게시판에 올림
+        # 기존에 내가 올린 판매 주문이 있는지 확인
+        my_existing_order = db.exec(select(TradeStocks).where(
+            TradeStocks.login_id == login_id, 
+            TradeStocks.stock_name == req.stock_name, 
+            TradeStocks.is_buy == False
+        )).first()
+        
+        if my_existing_order:
+            my_existing_order.quantity += req.quantity
         else:
-            # 올라온게 buy 일때
-            remaining_quantity = req.quantity  # 사용자가 판매하고자 하는 남은 수량
-            transaction_occurred = False  # 거래 발생 여부
-            trade_transactions = []  # 거래 내역을 저장할 리스트
+            db.add(TradeStocks(login_id=login_id, stock_name=req.stock_name, quantity=req.quantity, is_buy=False))
 
-            for trade_info in trade_info_list:  # 여러 개의 매수 주문을 처리할 수 있도록
-                if trade_info.quantity > remaining_quantity:
-                    trade_amount = remaining_quantity  # 요청 수량만큼 거래 가능
-                    trade_info.quantity -= (
-                        remaining_quantity  # 매수 주문에서 해당 수량 차감
-                    )
-                    transaction_occurred = True
-                    trade_transactions.append(
-                        (trade_info.login_id, trade_amount)
-                    )  # 거래 정보 저장
-                    remaining_quantity = 0
-                    break  # 요청한 수량을 전부 처리했으므로 종료
-
-                elif trade_info.quantity == remaining_quantity:
-                    trade_amount = remaining_quantity  # 요청 수량만큼 거래 가능
-                    db.delete(trade_info)  # 매수 주문을 전부 처리했으므로 삭제
-                    transaction_occurred = True
-                    trade_transactions.append(
-                        (trade_info.login_id, trade_amount)
-                    )  # 거래 정보 저장
-                    remaining_quantity = 0
-                    break  # 요청한 수량을 전부 처리했으므로 종료
-
-                else:  # trade_info.quantity < remaining_quantity
-                    trade_amount = trade_info.quantity  # 매수 주문의 모든 수량을 사용
-                    remaining_quantity -= trade_info.quantity  # 남은 요청 수량 업데이트
-                    db.delete(trade_info)  # 매수 주문 소진으로 삭제
-                    transaction_occurred = True
-                    trade_transactions.append(
-                        (trade_info.login_id, trade_amount)
-                    )  # 거래 정보 저장
-
-            # 요청한 수량이 매수 주문을 모두 소진하고도 남아있는 경우
-            if remaining_quantity > 0:
-                new_trade_info = TradeStocks(
-                    quantity=remaining_quantity,
-                    stock_name=req.stock_name,
-                    is_buy=False,
-                    login_id=login_id,
-                )
-                db.add(new_trade_info)  # 새로운 판매 요청 등록
-    else:
-        trade_info = TradeStocks(
-            login_id=login_id,
-            stock_name=req.stock_name,
-            is_buy=False,
-            quantity=req.quantity,
-        )
-        db.add(trade_info)
-
+    # 판매 주문을 올렸거나 거래가 성사되었으므로, 내 보유 주식에서 해당 수량만큼 차감해야 함
+    seller_stock.quantity -= req.quantity
+    
     db.commit()
 
     """
@@ -363,32 +286,16 @@ async def sell_order(
                 else:
                     buyer_stock.quantity += trade_amount
 
-        # 판매자의 보유 주식 감소
-        seller_stock = db.exec(
-            select(MyStocks).where(
-                MyStocks.login_id == login_id,
-                MyStocks.stock_name == req.stock_name,
-            )
-        ).first()
-
         if seller_stock:
-            seller_stock.quantity -= sum(
-                trade_amount for _, trade_amount in trade_transactions
-            )
+            pass
 
         db.commit()
 
     """
     tradestocks 에 is_buy 인것과 quantity 를 불러온걸 활용해서 가격변동
     """
-    updated_trade_info = db.exec(
-        select(TradeStocks).where(TradeStocks.stock_name == req.stock_name)
-    ).first()
-
-    if updated_trade_info.is_buy == True:
-        new_stock_price = req.stock_price + updated_trade_info.quantity * alpha
-    else:
-        new_stock_price = req.stock_price - updated_trade_info.quantity * alpha
+    new_stock_price = max(1, req.stock_price - (req.quantity * alpha))
+    print(f"DEBUG: Sell Price Change -> Old: {req.stock_price}, New: {new_stock_price}")
 
     updated_stock_for_price = db.exec(
         select(UserStocks).where(UserStocks.stock_name == req.stock_name)
