@@ -1,0 +1,8 @@
+
+.git
+.venv
+__pycache__
+front-react
+node_modules
+*.pyc
+*.pyo
