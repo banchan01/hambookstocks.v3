@@ -41,7 +41,7 @@ async def buy_stock(
     """
     돈 있는지 확인 / 돈 없으면 구매 불가능
     """
-    user = db.exec(select(User).where(User.login_id == login_id)).first()
+    user = db.exec(select(User).where(User.login_id == login_id).with_for_update()).first()
     if not user:
         raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다.")
 
@@ -55,6 +55,7 @@ async def buy_stock(
         select(TradeStocks)
         .where(TradeStocks.stock_name == req.stock_name, TradeStocks.is_buy == False)
         .order_by(TradeStocks.id)
+        .with_for_update()
     ).all()
     
     trade_info = trade_info_list[0] if trade_info_list else None
@@ -181,14 +182,14 @@ async def sell_order(
     """
     주식 있는지 확인 / 주식 없으면 매도 불가능
     """
-    user = db.exec(select(User).where(User.login_id == login_id)).first()
+    user = db.exec(select(User).where(User.login_id == login_id).with_for_update()).first()
     if not user:
         raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다.")
 
     seller_stock = db.exec(
         select(MyStocks).where(
             MyStocks.login_id == login_id, MyStocks.stock_name == req.stock_name
-        )
+        ).with_for_update()
     ).first()
     if not seller_stock:
         raise HTTPException(status_code=404, detail="보유주식을 찾을 수 없습니다.")
@@ -199,11 +200,12 @@ async def sell_order(
     """
     buy_req 올라온거 trade_stocks에서 찾고, 찾는 수량보다 적게 있으면.. 있는 만큼 판매하고, 없는 만큼 sell_req 를 tradestocks에 올린다
     """
-    # 팔러 왔으니 매수 주문만 찾아야 합니다.
+    # 팔러 왔으니 매수 주문만 찾아야 함
     trade_info_list = db.exec(
         select(TradeStocks)
         .where(TradeStocks.stock_name == req.stock_name, TradeStocks.is_buy == True)
         .order_by(TradeStocks.id)
+        .with_for_update()
     ).all()
     
     # 첫 번째 매수 물량 확인용
